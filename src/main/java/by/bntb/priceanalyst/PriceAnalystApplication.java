@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class PriceAnalystApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(PriceAnalystApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(PriceAnalystApplication.class, args);
+    }
 
 }
