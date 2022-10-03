@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Entity
 @Setter
 @Getter
@@ -20,4 +22,6 @@ public class Cell {
     private Row row;
 
     private String value;
+
+    private Date updateDate;
 }

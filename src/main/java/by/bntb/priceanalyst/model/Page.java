@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -21,4 +22,6 @@ public class Page {
     private Set<Table> tables;
 
     private String name;
+
+    private Date lastUpdate;
 }
