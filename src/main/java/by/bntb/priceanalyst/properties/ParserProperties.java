@@ -11,4 +11,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix="parser")
 public class ParserProperties {
     private String parentLink;
+    private String pageBlockClass;
 }
