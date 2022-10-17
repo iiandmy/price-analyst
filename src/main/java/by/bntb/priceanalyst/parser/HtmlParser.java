@@ -10,10 +10,9 @@ import org.jsoup.nodes.Node;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,6 +23,7 @@ public class HtmlParser implements Parser {
     private final ParserProperties properties;
 
     private final Pattern htmlLinkPattern = Pattern.compile("https://mc.ru/prices/\\w+.htm");
+    private final Pattern dateTimePattern = Pattern.compile("\\d{2}.\\d{2}.\\d{4} \\d{2}:\\d{2}");
 
     @Override
     public Set<Page> parsePrices() throws IOException {
@@ -31,12 +31,14 @@ public class HtmlParser implements Parser {
 
         Document htmlDoc = Jsoup.connect(properties.getParentLink()).get();
 
-        getPagesAsHtml(htmlDoc);
+        getRawPages(htmlDoc).forEach((rawPage) -> {
+            parsedPages.add(parsePage(rawPage));
+        });
 
         return parsedPages;
     }
 
-    private Set<Document> getPagesAsHtml(Document htmlDoc) {
+    private List<Page> getRawPages(Document htmlDoc) {
         Element pageBlock = cutUnnecessaryElements(
                 htmlDoc.getElementsByClass(properties.getPageBlockClass()).first()
         );
@@ -46,32 +48,60 @@ public class HtmlParser implements Parser {
                 .filter((node) -> node.childNodes().size() != 0)
                 .collect(Collectors.toList());
 
-        return getHtmlPages(getLinksFromNodes(nodes));
+        return parseLinksAndNames(nodes);
     }
 
-    private List<String> getLinksFromNodes(List<Node> nodes) {
-        List<String> links = new ArrayList<>();
+    private List<Page> parseLinksAndNames(List<Node> nodes) {
+        List<Page> pages = new ArrayList<>();
 
-        nodes.forEach((node) -> links.add(getHtmlLink(node.toString())));
-
-        return links.stream()
-                .filter((s) -> !s.isEmpty())
-                .collect(Collectors.toList());
-    }
-
-    private Set<Document> getHtmlPages(List<String> links) {
-        Set<Document> pages = new HashSet<>();
-
-        // FIXME
-        links.forEach((link) -> {
-            try {
-                pages.add(Jsoup.connect(link).get());
-            } catch (IOException e) {
-                e.printStackTrace();
+        nodes.forEach((node) -> {
+            String link = getHtmlLink(node.toString());
+            if (!link.isEmpty()) {
+                Page page = new Page();
+                page.setName(node.lastChild().toString());
+                page.setLink(link);
+                pages.add(page);
             }
         });
 
         return pages;
+    }
+
+    private Page parsePage(Page rawPage) {
+        Document pageDocument;
+
+        try {
+            pageDocument = Jsoup.connect(rawPage.getLink()).get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        rawPage.setLastUpdate(parseUpdateTime(pageDocument));
+
+        return rawPage;
+    }
+
+    // FIXME
+    private Date parseUpdateTime(Document pageDocument) {
+        Date updateDate = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
+        Element infoBlock = pageDocument.getElementById(properties.getInfoBlockId());
+        String infoString = infoBlock.lastElementChild().text();
+        Matcher matcher = dateTimePattern.matcher(infoString);
+
+        if (!matcher.find()) {
+            return new Date();
+        }
+
+        String dateString = infoString.substring(matcher.start(), matcher.end());
+        try {
+            updateDate = formatter.parse(dateString);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+
+        return updateDate;
     }
 
     /*

@@ -23,5 +23,7 @@ public class Page {
 
     private String name;
 
+    private String link;
+
     private Date lastUpdate;
 }

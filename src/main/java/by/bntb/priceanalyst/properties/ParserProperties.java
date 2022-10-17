@@ -12,4 +12,8 @@ import org.springframework.context.annotation.Configuration;
 public class ParserProperties {
     private String parentLink;
     private String pageBlockClass;
+    private String tablesClass;
+    private String infoBlockId;
+    private String leftTablesId;
+    private String rightTablesId;
 }
