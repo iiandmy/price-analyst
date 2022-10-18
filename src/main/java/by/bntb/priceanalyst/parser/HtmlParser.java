@@ -1,6 +1,7 @@
 package by.bntb.priceanalyst.parser;
 
 import by.bntb.priceanalyst.model.Page;
+import by.bntb.priceanalyst.model.Table;
 import by.bntb.priceanalyst.properties.ParserProperties;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -78,30 +79,53 @@ public class HtmlParser implements Parser {
 
         rawPage.setLastUpdate(parseUpdateTime(pageDocument));
 
+        Collection<Table> rightTables = parseTables(pageDocument.getElementById(properties.getRightTablesId()));
+        Collection<Table> leftTables = parseTables(pageDocument.getElementById(properties.getLeftTablesId()));
+
+        rightTables.addAll(leftTables);
+
+        rawPage.getTables()
+            .addAll(rightTables);
+
         return rawPage;
     }
 
-    // FIXME
+    private Set<Table> parseTables(Element rawTables) {
+        
+    }
+
     private Date parseUpdateTime(Document pageDocument) {
         Date updateDate = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm");
 
         Element infoBlock = pageDocument.getElementById(properties.getInfoBlockId());
-        String infoString = infoBlock.lastElementChild().text();
-        Matcher matcher = dateTimePattern.matcher(infoString);
+        String infoString = infoBlock.text();
+        String dateString = getDateSubstrFromString(infoString);
 
-        if (!matcher.find()) {
-            return new Date();
+        if (dateString.isEmpty()) {
+            throw new IllegalArgumentException("Wrong date in string - " + infoString);
         }
 
-        String dateString = infoString.substring(matcher.start(), matcher.end());
         try {
-            updateDate = formatter.parse(dateString);
+            updateDate = parseDateString(dateString);
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException();
         }
 
         return updateDate;
+    }
+
+    private String getDateSubstrFromString(String string) {
+        Matcher matcher = dateTimePattern.matcher(string);
+        if (!matcher.find()) {
+            return "";
+        }
+
+        return string.substring(matcher.start(), matcher.end());
+    }
+
+    private Date parseDateString(String dateString) throws ParseException {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+        return formatter.parse(dateString);
     }
 
     /*
