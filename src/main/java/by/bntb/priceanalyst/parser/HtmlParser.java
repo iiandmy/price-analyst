@@ -1,6 +1,7 @@
 package by.bntb.priceanalyst.parser;
 
 import by.bntb.priceanalyst.model.Page;
+import by.bntb.priceanalyst.model.Row;
 import by.bntb.priceanalyst.model.Table;
 import by.bntb.priceanalyst.properties.ParserProperties;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -79,23 +81,70 @@ public class HtmlParser implements Parser {
 
         rawPage.setLastUpdate(parseUpdateTime(pageDocument));
 
-        Collection<Table> rightTables = parseTables(pageDocument.getElementById(properties.getRightTablesId()));
-        Collection<Table> leftTables = parseTables(pageDocument.getElementById(properties.getLeftTablesId()));
+        Set<Table> rightTables = parseTables(pageDocument.getElementById(properties.getRightTablesId()));
+        Set<Table> leftTables = parseTables(pageDocument.getElementById(properties.getLeftTablesId()));
 
         rightTables.addAll(leftTables);
 
-        rawPage.getTables()
-            .addAll(rightTables);
+        rawPage.setTables(rightTables);
 
         return rawPage;
     }
 
     private Set<Table> parseTables(Element rawTables) {
-        
+        Set<Table> parsedTables = new HashSet<>();
+        if (rawTables == null) {
+            return parsedTables;
+        }
+
+        Elements tables = rawTables.children();
+
+//        tables.forEach((htmlTable) -> parsedTables.add(parseHtmlTable(htmlTable)));
+
+        parseHtmlTable(tables.first());
+
+        return parsedTables;
+    }
+
+    private Table parseHtmlTable(Element htmlTable) {
+        Table parsedTable = new Table();
+        Elements rows;
+        try {
+            rows = Objects.requireNonNull(htmlTable.children().first()).children();
+        } catch (NullPointerException e) {
+            return parsedTable;
+        }
+
+        parsedTable.setName(parseTableName(rows));
+        rows.remove(0);
+        parsedTable.setRows(parseTableRows(rows));
+
+        return parsedTable;
+    }
+
+    private String parseTableName(Elements rows) {
+        String name;
+
+        try {
+            name = Objects.requireNonNull(rows.first()).text();
+        } catch (NullPointerException e) {
+            return "";
+        }
+
+        return name;
+    }
+
+    private Set<Row> parseTableRows(Elements rows) {
+        Set<Row> parsedRows = new HashSet<>();
+        Elements columnsName = rows.first().children();
+
+        System.out.println(columnsName.text());
+
+        return parsedRows;
     }
 
     private Date parseUpdateTime(Document pageDocument) {
-        Date updateDate = new Date();
+        Date updateDate;
 
         Element infoBlock = pageDocument.getElementById(properties.getInfoBlockId());
         String infoString = infoBlock.text();
