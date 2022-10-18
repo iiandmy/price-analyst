@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
 
@@ -29,7 +30,7 @@ public class ParserTests {
     }
 
     @Test
-    void parseHtml() {
-
+    void parseHtml() throws IOException {
+        parser.parsePrices();
     }
 }
